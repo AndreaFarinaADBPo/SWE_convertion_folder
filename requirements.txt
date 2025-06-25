@@ -1,0 +1,14 @@
+# lettura del file geoTIFF
+rasterio
+
+# manipolazione della tabella di dati
+numpy
+pandas
+geopandas
+affine
+
+# gestione delle geometrie
+shapely
+
+# accesso al database
+sqlalchemy
