@@ -207,7 +207,7 @@ def convert_and_upload(file_path: str, db_url: str, geometry_table: str = 'geome
     date = is_valid_file(file)
 
     # Converte il file GeoTIFF in un geodataframe geopandas
-    gdf = geoTIFF_to_dataframe(file, date)
+    gdf = geoTIFF_to_dataframe(file_path, date)
     # Controlla il CRS e le geometrie del GeoDataFrame rispetto alla tabella del database
     postgresql_crs_check(gdf, geometry_table, db_url)
     # Converte il GeoDataFrame in un dataframe pandas eliminando le geometrie
