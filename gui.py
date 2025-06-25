@@ -15,7 +15,7 @@ def launch_gui():
             return
         try:
             for file in files:
-                convert_and_upload(file)
+                convert_and_upload(file, "postgresql+psycopg2://postgres:AndreasPostgres@localhost:5432/SWE")
             messagebox.showinfo("Successo", "File caricati con successo!")
         except Exception as e:
             messagebox.showerror("Errore", str(e))

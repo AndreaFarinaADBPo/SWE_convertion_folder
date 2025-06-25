@@ -191,7 +191,7 @@ def is_valid_file(file_name: str) -> str:
 
 
 # funzione completa per eseguire la conversione e il caricamento dei file GeoTIFF
-def convert_and_upload(file_path: str, db_url: str, geometry_table: str = 'Geometry_table', swe_table: str = 'SWE_table') -> None:
+def convert_and_upload(file_path: str, db_url: str, geometry_table: str = 'geometry_table', swe_table: str = 'daily_SWE_table') -> None:
     '''
     Converte un file GeoTIFF in un dataframe pandas e lo carica su un server postgreSQL. \n
     Args:
