@@ -14,6 +14,7 @@ import geopandas as gpd
 import numpy as np
 from shapely.geometry import box
 from sqlalchemy import create_engine
+from queries import get_srid, get_geometry_table
 
 # Funzione per convertire un file GeoTIFF in un dataframe pandas
 def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> gpd.GeoDataFrame:
@@ -54,7 +55,7 @@ def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> gpd.GeoDataFrame:
     # Crea un geodataframe geopandas con le coordinate e i valori della matrice
     geodataframe = gpd.GeoDataFrame(
         {'ID': ids.flatten(), 
-         'date': pd.to_datetime(date, format='%Y%m%d'), 
+         'date': pd.to_datetime(date, format='%Y-%m-%d'), 
          'SWE_mm': raster_data.flatten()}, 
         geometry=pixels, crs=raster_crs
     )
@@ -101,10 +102,10 @@ def postgresql_crs_check(gdf: gpd.GeoDataFrame, geometry_table: str, db_url: str
     # Crea un motore di connessione al database
     engine = create_engine(db_url)
     
+    # Estrae il CRS della tabella delle geometrie
+    db_crs = get_srid(engine, schema='public', table=geometry_table, geometry_column='cell_geometry')
     # Estrae tutte le geometrie dalla tabella del database
-    pixel_db = gpd.read_postgis(f"SELECT ID, geometry FROM {geometry_table} LIMIT 1", con=engine)
-    # Estrae il crs dalla geometria del primo pixel
-    db_crs = pixel_db['geometry'].crs.to_epsg() if not pixel_db.empty else None
+    pixel_db = get_geometry_table(engine, schema='public', table=geometry_table)
     
     # Controlla se il CRS del GeoDataFrame corrisponde a quello della tabella
     if gdf_crs != db_crs:

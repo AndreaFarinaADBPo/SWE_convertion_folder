@@ -11,7 +11,6 @@ def launch_gui():
     def upload_files():
         '''Apre un dialogo per selezionare i file GeoTIFF, li carica e ne tenta la conversione. \n'''
         files = filedialog.askopenfilenames(filetypes=[("GeoTIFF files", "*.tif")])
-        print(files)
         if not files:
             return
         try:
