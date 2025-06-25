@@ -16,6 +16,7 @@ from shapely.geometry import box
 from sqlalchemy import create_engine
 from queries import get_srid, get_geometry_table
 
+
 # Funzione per convertire un file GeoTIFF in un dataframe pandas
 def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> gpd.GeoDataFrame:
     '''
@@ -34,7 +35,12 @@ def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> gpd.GeoDataFrame:
         raster_data = raster.read(1)
         raster_transform = raster.transform
         raster_crs = raster.crs
+        raster_noData = raster.nodata
     
+    # Modifica i valori noData a NaN
+    raster_data = np.where(raster_data == raster_noData, np.nan, raster_data)
+
+    print(f"CRS del raster: {raster_crs}")
     # Controlla che la larghezza e l'altezza dei pixel siano pari a 500
     if raster_transform.a != 500 or raster_transform.e != -500:
         raise ValueError("La larghezza e l'altezza dei pixel devono essere pari a 500.")
