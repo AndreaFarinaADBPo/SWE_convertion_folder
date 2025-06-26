@@ -114,8 +114,8 @@ def postgresql_crs_check(gdf: gpd.GeoDataFrame, geometry_table: str, db_url: str
     pixel_db = get_geometry_table(engine, schema='public', table=geometry_table)
     
     # Controlla se il CRS del GeoDataFrame corrisponde a quello della tabella
-    if gdf_crs != db_crs:
-        raise ValueError(f"Il CRS del GeoDataFrame ({gdf_crs}) non corrisponde al CRS della tabella ({db_crs}).")
+#   if gdf_crs != db_crs:
+#       raise ValueError(f"Il CRS del GeoDataFrame ({gdf_crs}) non corrisponde al CRS della tabella ({db_crs}).")
 
     # Crea una colonna temporanea con geometrie WKB per confronto veloce e efficiente
     gdf['geometry_wkb'] = gdf['geometry'].apply(lambda geom: geom.wkb_hex)
