@@ -1,13 +1,14 @@
 '''
 Questo modulo fornisce le query SQL per la gestione dei dati nel database PostgreSQL. \n
 '''
+from rasterio.crs import CRS
 import pandas as pd
 import geopandas as gpd
 from sqlalchemy import text
 
 
 # Funzione per ottenere il SRID (Spatial Reference Identifier) di una tabella geometrica in PostgreSQL
-def get_srid(engine, schema: str, table: str, geometry_column: str) -> int:
+def get_srid(engine, schema: str, table: str, geometry_column: str) -> str:
     '''
     Ottiene il SRID (Spatial Reference Identifier) di una tabella geometrica in un database PostgreSQL. \n
     Args:
@@ -16,8 +17,9 @@ def get_srid(engine, schema: str, table: str, geometry_column: str) -> int:
         table: Il nome della tabella geometrica.
         geometry_column: Il nome della colonna geometrica nella tabella. \n
     Returns:
-        int: Il SRID della colonna geometrica. \n
+        str: Il SRID della colonna geometrica in formato EPSG. \n
     '''
+    # Query per ottenere il SRID dalla tabella geometry_columns
     crs_query = text("""
         SELECT srid
         FROM geometry_columns
@@ -25,13 +27,15 @@ def get_srid(engine, schema: str, table: str, geometry_column: str) -> int:
           AND f_table_name = :table
           AND f_geometry_column = :geometry_column;
     """)
+    # Esegue la query e recupera il risultato
     with engine.connect() as connection:
         result = connection.execute(crs_query, {
             "schema": schema, 
             "table": table, 
             "geometry_column": geometry_column
         }).fetchone()
-        return result[0] if result else None
+    # ritorna il SRID in formato CRS
+    return CRS.from_epsg({result[0]}) if result else None
 
 
 # Funzione per controllare se un file GeoTIFF è valido
@@ -68,4 +72,3 @@ def is_valid_file(file_name: str) -> str:
         raise ValueError("La data nel nome del file deve essere nel formato 'YYYY-MM-DD'.")
     
     return date
-

@@ -30,6 +30,7 @@ def launch_gui():
 
     # Funzione per mostrare una finestra di avanzamento durante la conversione dei file.
     def show_progress_window():
+        '''Crea una finestra di avanzamento per mostrare lo stato della conversione dei file.'''
         progress_win = tk.Toplevel(root)
         progress_win.title("Avanzamento conversione")
         progress_win.geometry("400x150")
@@ -71,12 +72,14 @@ def launch_gui():
 
         # Funzione per eseguire la conversione e il caricamento dei file in un thread separato.
         def worker():
+            '''Esegue la conversione e il caricamento dei file in un thread separato.'''
             success = True
             
             # Inizializza la barra di avanzamento
             for idx, file in enumerate(selected_files, 1):
                 # Funzione per aggiornare l'interfaccia grafica con lo stato corrente della conversione
                 def update_gui():
+                    '''Aggiorna l'interfaccia grafica con lo stato corrente della conversione.'''
                     progress_label.config(text=f"Sto convertendo: {file.split('/')[-1]} ({idx}/{len(selected_files)})")
                     progress_bar['value'] = idx - 1
                 # Aggiorna l'interfaccia grafica
@@ -91,6 +94,7 @@ def launch_gui():
                     success = False
                     # Funzione per mostrare un messaggio di errore nell'interfaccia grafica
                     def show_error():
+                        '''Mostra un messaggio di errore nell'interfaccia grafica.'''
                         progress_label.config(text=f"Errore su {file.split('/')[-1]}: {e}")
                         progress_bar['value'] = idx
                         messagebox.showerror("Errore", f"Errore su {file}:\n{e}")
@@ -100,6 +104,7 @@ def launch_gui():
             
             # Funzione per aggiornare l'interfaccia grafica al termine della conversione
             def finish():
+                '''Aggiorna l'interfaccia grafica al termine della conversione.'''
                 progress_bar['value'] = len(selected_files)
                 if success:
                     progress_label.config(text="Conversione completata con successo!")

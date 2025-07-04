@@ -9,6 +9,7 @@ Infine il dataframe pandas viene caricato su un server postgreSQL utilizzando sq
 '''
 import os
 import rasterio
+from rasterio.crs import CRS
 import affine
 import pandas as pd
 import geopandas as gpd
@@ -19,7 +20,7 @@ from functions import get_srid, is_valid_file
 
 
 # Funzione per convertire un file GeoTIFF in un dataframe pandas
-def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> tuple[pd.DataFrame, str, affine.Affine]:
+def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> tuple[pd.DataFrame, CRS, affine.Affine]:
     '''
     '''
     with rasterio.open(geoTIFF_path) as raster:
@@ -29,8 +30,9 @@ def geoTIFF_to_dataframe(geoTIFF_path: str, date: str) -> tuple[pd.DataFrame, st
         raster_crs = raster.crs
         raster_noData = raster.nodata
     
+    # controlla che il file geoTIFF abbia un CRS valido e lo corregge
     if raster_crs is None:
-        raster_crs = 'EPSG:3035'
+        raster_crs = CRS.from_epsg(3035)
 
     # Modifica i valori noData a NaN
     raster_data = np.where(raster_data == raster_noData, np.nan, raster_data)
@@ -70,7 +72,7 @@ def geometry_check(df_ids: pd.Series, crs, transform, geometry_table: str, db_ur
     if transform.a != 500 or transform.e != -500:
         raise ValueError("La larghezza e l'altezza dei pixel devono essere pari a 500.")
     # Controlla se il CRS del GeoDataFrame corrisponde a quello della tabella
-    if crs != db_crs:
+    if crs != db_crs.to_espg():
         raise ValueError(f"Il CRS del geoTIFF non corrisponde al CRS della tabella ({db_crs}).")
 
     # Trova i cell_id mancanti
