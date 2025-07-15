@@ -140,25 +140,25 @@ def launch_gui():
     conn_frame.place(relx=0.0, rely=1.0, anchor='sw', x=20, y=-20)
 
     tk.Label(conn_frame, text="User:").grid(row=0, column=0, sticky='e')
-    entry_user = tk.Entry(conn_frame, width=12)
+    entry_user = tk.Entry(conn_frame, width=20)
     entry_user.grid(row=0, column=1)
 
     tk.Label(conn_frame, text="Password:").grid(row=1, column=0, sticky='e')
-    entry_password = tk.Entry(conn_frame, width=12, show="*")
+    entry_password = tk.Entry(conn_frame, width=20, show="*")
     entry_password.grid(row=1, column=1)
 
     tk.Label(conn_frame, text="Host:").grid(row=2, column=0, sticky='e')
-    entry_host = tk.Entry(conn_frame, width=12)
+    entry_host = tk.Entry(conn_frame, width=20)
     entry_host.grid(row=2, column=1)
     entry_host.insert(0, "localhost")
 
     tk.Label(conn_frame, text="Port:").grid(row=3, column=0, sticky='e')
-    entry_port = tk.Entry(conn_frame, width=12)
+    entry_port = tk.Entry(conn_frame, width=20)
     entry_port.grid(row=3, column=1)
     entry_port.insert(0, "5432")
 
     tk.Label(conn_frame, text="DB Name:").grid(row=4, column=0, sticky='e')
-    entry_dbname = tk.Entry(conn_frame, width=12)
+    entry_dbname = tk.Entry(conn_frame, width=20)
     entry_dbname.grid(row=4, column=1)
 
     # Pulsante per convertire e caricare i file
