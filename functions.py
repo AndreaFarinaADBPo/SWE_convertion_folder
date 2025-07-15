@@ -21,11 +21,7 @@ def get_srid(engine, schema: str, table: str, geometry_column: str) -> str:
     '''
     # Query per ottenere il SRID dalla tabella geometry_columns
     crs_query = text("""
-        SELECT srid
-        FROM geometry_columns
-        WHERE f_table_schema = :schema
-          AND f_table_name = :table
-          AND f_geometry_column = :geometry_column;
+        SELECT Find_SRID(:schema, :table, :geometry_column);
     """)
     # Esegue la query e recupera il risultato
     with engine.connect() as connection:
@@ -35,7 +31,7 @@ def get_srid(engine, schema: str, table: str, geometry_column: str) -> str:
             "geometry_column": geometry_column
         }).fetchone()
     # ritorna il SRID in formato CRS
-    return CRS.from_epsg({result[0]}) if result else None
+    return CRS.from_epsg(int(result[0])) if result else None
 
 
 # Funzione per controllare se un file GeoTIFF è valido
@@ -72,3 +68,22 @@ def is_valid_file(file_name: str) -> str:
         raise ValueError("La data nel nome del file deve essere nel formato 'YYYY-MM-DD'.")
     
     return date
+
+
+# Funzione per estrarre l'anno nivologico da una data
+def nivological_year(date: str) -> int:
+    '''
+    Estrae l'anno nivologico da una data nel formato 'YYYY-MM-DD'. \n
+    Args:
+        date: La data da cui estrarre l'anno nivologico. \n
+    Returns:
+        int: L'anno nivologico. \n
+    '''
+    # Converte la stringa della data in un oggetto datetime
+    date_obj = pd.to_datetime(date, format='%Y-%m-%d')
+    # Estrae l'anno dalla data
+    year = date_obj.year
+    # Se il mese è dopo settembre, incrementa l'anno di 1
+    if date_obj.month > 9:
+        year += 1
+    return year

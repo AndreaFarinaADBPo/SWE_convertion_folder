@@ -93,13 +93,13 @@ def launch_gui():
                 except Exception as e:
                     success = False
                     # Funzione per mostrare un messaggio di errore nell'interfaccia grafica
-                    def show_error():
+                    def show_error(error):
                         '''Mostra un messaggio di errore nell'interfaccia grafica.'''
                         progress_label.config(text=f"Errore su {file.split('/')[-1]}: {e}")
                         progress_bar['value'] = idx
-                        messagebox.showerror("Errore", f"Errore su {file}:\n{e}")
+                        messagebox.showerror("Errore", f"Errore su {file}:\n{error}")
                     # Mostra l'errore nell'interfaccia grafica
-                    root.after(0, show_error)
+                    root.after(0, show_error(e))
                     break
             
             # Funzione per aggiornare l'interfaccia grafica al termine della conversione
