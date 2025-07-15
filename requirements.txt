@@ -12,3 +12,4 @@ shapely
 
 # accesso al database
 sqlalchemy
+geoalchemy2
