@@ -1,18 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-import os
-import pyproj
 from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
-
-# Percorso della cartella che contiene proj.db
-proj_data_dir = pyproj.datadir.get_data_dir()
-
-# Includi TUTTI i file dentro la cartella (proj.db, ecc.)
-pyproj_datas = [
-    (os.path.join(proj_data_dir, filename), os.path.join('share', 'proj', filename))
-    for filename in os.listdir(proj_data_dir)
-]
 
 # Hidden imports (necessari per rasterio e psycopg2)
 hidden = [
@@ -28,7 +17,7 @@ a = Analysis(
     ['swe_convert_upload.py'],  # Sostituisci con il tuo nome file
     pathex=[],
     binaries=[],
-    datas=pyproj_datas,
+    datas=[],
     hiddenimports=hidden,
     hookspath=[],
     runtime_hooks=[],
