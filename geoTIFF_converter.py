@@ -8,7 +8,6 @@ la data è estratta dal nome del file e SWE_mm è il valore della matrice dei da
 Infine il dataframe pandas viene caricato su un server postgreSQL utilizzando sqlalchemy. \n
 '''
 import os
-import sys
 import rasterio
 from rasterio.crs import CRS
 import affine
@@ -19,13 +18,8 @@ from shapely.geometry import box
 from sqlalchemy import create_engine, text
 from functions import get_srid, is_valid_file, nivological_year
 
-if hasattr(sys, '_MEIPASS'):
-    # Percorso in esecuzione da exe creato da PyInstaller
-    os.environ['PROJ_LIB'] = os.path.join(sys._MEIPASS, 'share', 'proj')
-else:
-    # Percorso durante lo sviluppo / da IDE
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    os.environ['PROJ_LIB'] = os.path.join(base_dir, ".venv", "Lib", "site-packages", "pyproj", "proj_dir", "share", "proj")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+os.environ['PROJ_LIB'] = os.path.join(base_dir, ".venv", "Lib", "site-packages", "pyproj", "proj_dir", "share", "proj")
 
 # Funzione per convertire un file GeoTIFF in un dataframe pandas
 def geoTIFF_to_dataframe(geoTIFF_path: str, date: str, snow_year: int) -> tuple[pd.DataFrame, CRS, affine.Affine]:
