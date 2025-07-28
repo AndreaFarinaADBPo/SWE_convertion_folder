@@ -14,7 +14,7 @@ hidden = [
 
 # Analisi del file principale
 a = Analysis(
-    ['swe_convert_upload.py'],  # Sostituisci con il tuo nome file
+    ['swe_convert_upload.py'],
     pathex=[],
     binaries=[],
     datas=[],
