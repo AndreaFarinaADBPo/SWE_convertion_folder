@@ -20,6 +20,19 @@ from shapely.geometry import box
 from sqlalchemy import create_engine, text
 from functions import get_srid, is_valid_file, nivological_year
 
+import logging
+import time
+
+logging.basicConfig(
+    level=logging.INFO,  # Puoi cambiare in DEBUG se vuoi più dettagli
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("geotiff_upload.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+
 if getattr(sys, 'frozen', False):
     os.environ['PROJ_DATA'] = os.path.join(sys._MEIPASS, 'pyproj', 'proj_dir', 'share', 'proj')
 else:
@@ -30,6 +43,15 @@ else:
 # Funzione per convertire un file GeoTIFF in un dataframe pandas
 def geoTIFF_to_dataframe(geoTIFF_path: str, date: str, snow_year: int) -> tuple[pd.DataFrame, CRS, affine.Affine]:
     '''
+    Converte un file GeoTIFF in un dataframe pandas con le colonne 'cell_id', 'snow_year', 'date' e 'swe_mm'. \n
+    Args:
+        geoTIFF_path: Il percorso del file GeoTIFF da convertire.
+        date: La data estratta dal nome del file nel formato 'YYYY-MM-DD'.
+        snow_year: L'anno nivologico calcolato a partire dalla data. \n
+    Returns:
+        tuple: Un tuple contenente il dataframe pandas, il CRS del GeoTIFF e la matrice di trasformazione. \n
+    Raises:
+
     '''
     with rasterio.open(geoTIFF_path) as raster:
         # Estrae la matrice dei dati e le informazioni di georeferenziazione
@@ -37,6 +59,8 @@ def geoTIFF_to_dataframe(geoTIFF_path: str, date: str, snow_year: int) -> tuple[
         raster_transform = raster.transform
         raster_crs = raster.crs
         raster_noData = raster.nodata
+    logging.debug(f"Apertura GeoTIFF: {geoTIFF_path} completata con successo.")
+    logging.debug(f"Dimensioni matrice raster: {raster_data.shape}")
 
     # Modifica i valori noData a NaN
     raster_data = np.where(raster_data == raster_noData, np.nan, raster_data)
@@ -66,11 +90,24 @@ def geoTIFF_to_dataframe(geoTIFF_path: str, date: str, snow_year: int) -> tuple[
 
 
 # Funzione per controllare il CRS e gli ID del GeoDataFrame rispetto alla tabella del database
-def geometry_check(df_ids: pd.Series, crs, transform, geometry_table: str, db_url: str) -> bool:
+def geometry_check(df_ids: pd.Series, crs, transform, geometry_table: str, db_url: str) -> list:
     '''
+    Controlla il CRS e gli ID del GeoDataFrame rispetto alla tabella delle geometrie nel database. \n
+    Args:
+        df_ids: La serie degli ID del GeoDataFrame.
+        crs: Il CRS del GeoDataFrame.
+        transform: La matrice di trasformazione del GeoDataFrame.
+        geometry_table: Il nome della tabella delle geometrie nel database.
+        db_url: L'URL di connessione al database PostgreSQL. \n
+    Returns:
+        list: Una lista degli ID mancanti nella tabella delle geometrie del database. \n
+    Raises:
+        ValueError: Se la larghezza e l'altezza dei pixel non sono pari a 500 o se il CRS del GeoDataFrame non corrisponde a quello della tabella. \n
+        Exception: Se si verifica un errore durante l'esecuzione della query per ottenere il SRID o gli ID della tabella delle geometrie. \n
     '''
     # Estrae il CRS e gli ID della tabella delle geometrie dal database
     engine = create_engine(db_url)
+    logging.info("Estrazione di CRS e ID dal database.")
     try:
         # Estrae il CRS della tabella delle geometrie e i cell_id già presenti
         db_crs = get_srid(engine, schema='public', table=geometry_table, geometry_column='cell_geom')
@@ -78,6 +115,7 @@ def geometry_check(df_ids: pd.Series, crs, transform, geometry_table: str, db_ur
         db_ids = pd.read_sql(query, engine)["cell_id"]
     finally:
         engine.dispose()
+    logging.info("Estrazione completata con successo.")
     
     # Controlla che la larghezza e l'altezza dei pixel siano pari a 500
     if transform.a != 500 or transform.e != -500:
@@ -95,9 +133,19 @@ def geometry_check(df_ids: pd.Series, crs, transform, geometry_table: str, db_ur
 def add_missing_geometries(missing_ids: list, crs, geometry_table: str, db_url: str):
     '''
     Calcola le geometrie solo per gli ID mancanti e le carica nella geometry_table.
+    Args:
+        missing_ids: Una lista degli ID mancanti nella tabella delle geometrie del database.
+        crs: Il CRS del GeoDataFrame.
+        geometry_table: Il nome della tabella delle geometrie nel database.
+        db_url: L'URL di connessione al database PostgreSQL. \n
+    Returns:
+        None \n
+    Raises:
+        Exception: Se si verifica un errore durante la creazione del GeoDataFrame o il caricamento nel database. \n
     '''
     if not missing_ids:
         return
+    logging.info(f"Generazione di {len(missing_ids)} nuove geometrie per ID mancanti.")
     # Ricostruisce le geometrie per gli ID mancanti
     lons = [int(missing_id.split('_')[0]) for missing_id in missing_ids]
     lats = [int(missing_id.split('_')[1]) for missing_id in missing_ids]
@@ -117,6 +165,15 @@ def add_missing_geometries(missing_ids: list, crs, geometry_table: str, db_url: 
 # Funzione per caricare un dataframe pandas su un server postgreSQL
 def dataframe_to_postgresql(df: pd.DataFrame, SWE_table: str, db_url: str) -> None:
     '''
+    Carica un dataframe pandas nella tabella SWE_table del database PostgreSQL. \n
+    Args:
+        df: Il dataframe pandas da caricare.
+        SWE_table: Il nome della tabella SWE nel database.
+        db_url: L'URL di connessione al database PostgreSQL. \n
+    Returns:
+        None \n
+    Raises:
+        ValueError: Se il dataframe non è un pandas DataFrame o se è vuoto.
     '''
     # gestione degli errori
     if not isinstance(df, pd.DataFrame):
@@ -126,6 +183,7 @@ def dataframe_to_postgresql(df: pd.DataFrame, SWE_table: str, db_url: str) -> No
 
     # Carica il dataframe nella tabella specificata
     engine = create_engine(db_url)
+    logging.info(f"Caricamento dati SWE in tabella '{SWE_table}'")
     try:
         with engine.begin() as connection:
             # Scrivi su una tabella temporanea
@@ -141,6 +199,7 @@ def dataframe_to_postgresql(df: pd.DataFrame, SWE_table: str, db_url: str) -> No
             connection.execute(text(insert_sql))
     finally:
         engine.dispose()
+    logging.info(f"Dati SWE caricati con successo nella tabella '{SWE_table}'.")
 
 
 # funzione completa per eseguire la conversione e il caricamento dei file GeoTIFF
@@ -155,18 +214,50 @@ def convert_and_upload(file_path: str, db_url: str, geometry_table: str = 'cell_
     Returns:
         None \n
     '''
+    # Registra l'inizio del tempo di esecuzione
+    start_time = time.time()
+
     # Estrae il nome del file dal percorso
     file = os.path.basename(file_path)
+    logging.info(f"Inizio conversione del file: {file}")
+
     # Controlla che il nome del file sia salvato nel formato 'SWE_YYYY-MM-DD.tif'
-    date = is_valid_file(file)
+    try:
+        date = is_valid_file(file)
+        logging.info(f"Data estratta dal nome del file: {date}")
+    except ValueError as e:
+        logging.error(f"Errore nel nome del file {file}: {e}")
+        logging.error("Conversione del file interrotta a causa di nome non valido.")
+        logging.info("L'esecuzione procede con il prossimo file, se presente.")
+        logging.info(f"Tempo totale di esecuzione: {time.time() - start_time:.2f} secondi")
+        return
+    
     # Calcola l'anno nivologico a partire dalla data
     snow_year = nivological_year(date)
+    logging.info(f"Anno nivologico calcolato: {snow_year}")
 
-    # Converte il file GeoTIFF in un geodataframe geopandas
-    df, crs, transform = geoTIFF_to_dataframe(file_path, date, snow_year)
-    # Controlla il CRS e gli ID del GeoDataFrame rispetto alla tabella del database
-    missing_ids = geometry_check(df['cell_id'], crs, transform, geometry_table, db_url)
-    # Aggiunge le geometrie mancanti al database
-    add_missing_geometries(missing_ids, crs, geometry_table, db_url)
-    # Carica il GeoDataFrame nella tabella delle geometrie del database
-    dataframe_to_postgresql(df, swe_table, db_url)
+    # Esegue la conversione e il caricamento del file GeoTIFF
+    try:
+        # Converte il file GeoTIFF in un dataframe pandas
+        df, crs, transform = geoTIFF_to_dataframe(file_path, date, snow_year)
+        logging.info(f"File convertito in DataFrame: {len(df)} righe non nulle")
+        # Controlla il CRS e gli ID del GeoDataFrame rispetto alla tabella del database
+        missing_ids = geometry_check(df['cell_id'], crs, transform, geometry_table, db_url)
+        # Controlla se ci sono geometrie mancanti
+        if missing_ids:
+            logging.warning(f"{len(missing_ids)} geometrie mancanti trovate nel DB. Verranno aggiunte.")
+            # Aggiunge le geometrie mancanti al database
+            add_missing_geometries(missing_ids, crs, geometry_table, db_url)
+            logging.info("Eventuali geometrie mancanti aggiunte.")
+        else:
+            logging.info("Nessuna geometria mancante trovata.")
+        # Carica il GeoDataFrame nella tabella delle geometrie del database
+        dataframe_to_postgresql(df, swe_table, db_url)
+        logging.info(f"Dati SWE caricati con successo nella tabella '{swe_table}'")
+    # Gestisce eventuali errori durante la conversione e il caricamento
+    except Exception as e:
+        logging.error(f"Errore durante l'elaborazione di '{file}': {e}", exc_info=True)
+
+    # Registra il tempo totale di esecuzione
+    elapsed_time = time.time() - start_time
+    logging.info(f"Tempo totale di esecuzione per '{file}': {elapsed_time:.2f} secondi")
