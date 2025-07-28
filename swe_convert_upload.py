@@ -1,4 +1,4 @@
-from gui import launch_gui
+from gui_func import launch_gui
 
 def main():
     # Lancia l'interfaccia grafica
