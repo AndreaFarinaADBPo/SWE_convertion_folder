@@ -1,8 +1,8 @@
-from gui_class import SWEConvertGUI
+from gui_class import SWEConverterGUI
 
 def main():
     # Lancia l'interfaccia grafica
-    app = SWEConvertGUI()
+    app = SWEConverterGUI()
     app.mainloop()
 
 if __name__ == "__main__":

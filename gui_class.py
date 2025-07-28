@@ -1,9 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import threading
+import logging
 import queue
 import os
-from geoTIFF_converter import convert_and_upload
+from geoTIFF_converter import convert_and_upload, GuiLogHandler
 
 
 class SWEConverterGUI(tk.Tk):
@@ -16,6 +17,12 @@ class SWEConverterGUI(tk.Tk):
         self.geometry("700x500")
         self.selected_files = []
         self.queue = queue.Queue()
+        # Configura il gestore di log per l'interfaccia grafica
+        gui_handler = GuiLogHandler(self._append_log)
+        gui_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logging.getLogger().addHandler(gui_handler)
+        logging.getLogger().setLevel(logging.INFO)  # o DEBUG se vuoi più dettagli
+        # Crea i widget dell'interfaccia grafica
         self._create_widgets()
 
     # Metodo per creare i widget dell'interfaccia grafica
@@ -106,7 +113,7 @@ class SWEConverterGUI(tk.Tk):
         '''Crea una finestra con tab Progress e Log.'''
         progress_win = tk.Toplevel(self)
         progress_win.title("Avanzamento conversione")
-        progress_win.geometry("500x300")
+        progress_win.geometry("700x500")
         notebook = ttk.Notebook(progress_win)
         notebook.pack(fill="both", expand=True)
 
@@ -185,8 +192,6 @@ class SWEConverterGUI(tk.Tk):
                     self.entry_port.config(state="normal")
                     self.entry_dbname.config(state="normal")
         except queue.Empty:
-            pass
-        else:
             pass
         finally:
             if self.progress_win.winfo_exists():

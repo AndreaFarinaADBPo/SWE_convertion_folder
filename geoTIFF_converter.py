@@ -23,16 +23,17 @@ from functions import get_srid, is_valid_file, nivological_year
 import logging
 import time
 
-logging.basicConfig(
-    level=logging.INFO,  # Puoi cambiare in DEBUG se vuoi più dettagli
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("geotiff_upload.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+# Configura il logger con un handler
+class GuiLogHandler(logging.Handler):
+    def __init__(self, gui_callback):
+        super().__init__()
+        self.gui_callback = gui_callback
 
+    def emit(self, record):
+        msg = self.format(record)
+        self.gui_callback(msg)
 
+# Imposta la variabile d'ambiente PROJ_DATA per rasterio
 if getattr(sys, 'frozen', False):
     os.environ['PROJ_DATA'] = os.path.join(sys._MEIPASS, 'pyproj', 'proj_dir', 'share', 'proj')
 else:
