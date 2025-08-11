@@ -33,6 +33,13 @@ class GuiLogHandler(logging.Handler):
         msg = self.format(record)
         self.gui_callback(msg)
 
+# Imposta la variabile d'ambiente GDAL_DATA per rasterio
+if getattr(sys, 'frozen', False):
+    os.environ['GDAL_DATA'] = os.path.join(sys._MEIPASS, 'gdal', 'data')
+else:
+    gdal_data_dir = rasterio.__gdal_data__
+    os.environ['GDAL_DATA'] = gdal_data_dir
+
 # Imposta la variabile d'ambiente PROJ_DATA per rasterio
 if getattr(sys, 'frozen', False):
     os.environ['PROJ_DATA'] = os.path.join(sys._MEIPASS, 'pyproj', 'proj_dir', 'share', 'proj')

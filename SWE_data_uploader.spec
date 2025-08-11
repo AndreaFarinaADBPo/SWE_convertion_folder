@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import rasterio
 from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
 
@@ -17,7 +18,7 @@ a = Analysis(
     ['swe_convert_upload.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[(os.path.join(rasterio.__path__[0], 'gdal_data'), 'gdal/data'),],
     hiddenimports=hidden,
     hookspath=[],
     runtime_hooks=[],
@@ -46,4 +47,15 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='SWE_data_uploader'
 )
