@@ -25,13 +25,13 @@ import time
 
 # Configura il logger con un handler
 class GuiLogHandler(logging.Handler):
-    def __init__(self, gui_callback):
+    def __init__(self, queue):
         super().__init__()
-        self.gui_callback = gui_callback
+        self.queue = queue
 
     def emit(self, record):
         msg = self.format(record)
-        self.gui_callback(msg)
+        self.queue.put(("log", msg))
 
 # Imposta la variabile d'ambiente GDAL_DATA per rasterio
 if getattr(sys, 'frozen', False):
@@ -238,7 +238,7 @@ def convert_and_upload(file_path: str, db_url: str, geometry_table: str = 'cell_
         logging.error("Conversione del file interrotta a causa di nome non valido.")
         logging.info("L'esecuzione procede con il prossimo file, se presente.")
         logging.info(f"Tempo totale di esecuzione: {time.time() - start_time:.2f} secondi")
-        return
+        raise
     
     # Calcola l'anno nivologico a partire dalla data
     snow_year = nivological_year(date)
@@ -261,10 +261,12 @@ def convert_and_upload(file_path: str, db_url: str, geometry_table: str = 'cell_
             logging.info("Nessuna geometria mancante trovata.")
         # Carica il GeoDataFrame nella tabella delle geometrie del database
         dataframe_to_postgresql(df, swe_table, db_url)
-        logging.info(f"Dati SWE caricati con successo nella tabella '{swe_table}'")
     # Gestisce eventuali errori durante la conversione e il caricamento
     except Exception as e:
         logging.error(f"Errore durante l'elaborazione di '{file}': {e}", exc_info=True)
+        logging.info("L'esecuzione procede con il prossimo file, se presente.")
+        logging.info(f"Tempo totale di esecuzione: {time.time() - start_time:.2f} secondi")
+        raise
 
     # Registra il tempo totale di esecuzione
     elapsed_time = time.time() - start_time

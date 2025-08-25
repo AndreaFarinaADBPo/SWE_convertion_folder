@@ -23,7 +23,7 @@ class SWEConverterGUI(tk.Tk):
         self.queue = queue.Queue()
         self.stop_event = threading.Event()
         # Configura il gestore di log per l'interfaccia grafica
-        gui_handler = GuiLogHandler(self._append_log)
+        gui_handler = GuiLogHandler(self.queue)
         gui_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         logging.getLogger().addHandler(gui_handler)
         logging.getLogger().setLevel(logging.INFO)  # o DEBUG se vuoi più dettagli
@@ -201,6 +201,7 @@ class SWEConverterGUI(tk.Tk):
     def _worker_thread(self, db_url):
         '''Esegue la conversione e il caricamento dei file in un thread separato.'''
         success = True
+        failed_files = []
         for idx, file in enumerate(self.file_list, start=1):
             if self.stop_event.is_set():
                 self.queue.put(("log", "Elaborazione interrotta."))
@@ -212,9 +213,11 @@ class SWEConverterGUI(tk.Tk):
                 self.queue.put(("log", f"Completato: {file}"))
             except Exception as e:
                 success = False
+                failed_files.append(file)
                 self.queue.put(("error", file, str(e)))
-                break
-        self.queue.put(("done", success))
+                # Continua con il prossimo file in caso di errore
+                continue
+        self.queue.put(("done", success, failed_files))
 
     # Metodo per processare la coda degli eventi
     def _process_queue(self):
@@ -242,14 +245,24 @@ class SWEConverterGUI(tk.Tk):
                     messagebox.showerror("Errore", f"Errore su {file}:\n{err}")
                 # Caso done, aggiorna la barra di progresso e mostra un messaggio di successo o errore  
                 elif kind == "done":
-                    _, success = msg
+                    if len(msg) == 3:
+                        _, success, failed_files = msg
+                    else:
+                        _, success = msg
+                        failed_files = []
                     self.btn_convert.config(state="normal")
                     self.btn_stop.config(state="disabled")
                     self.btn_select.config(state="normal")
                     self._toggle_db_fields("normal")
-                    if success:
+                    if success and not failed_files:
                         self._append_log("Conversione completata con successo")
                         self.status_label.config(text="Conversione completata con successo")
+                    elif success and failed_files:
+                        self._append_log(f"Conversione completata con errori su {len(failed_files)} file.")
+                        for f in failed_files:
+                            self._append_log(f" - {f}")
+                        self.status_label.config(text=f"Conversione completata con errori su {len(failed_files)} file.")
+                        messagebox.showwarning("Attenzione", f"Conversione completata con errori su {len(failed_files)} file.")
                     else:
                         self.status_label.config(text="Conversione interrotta o fallita.")
         except queue.Empty:
